@@ -180,9 +180,11 @@ else
 fi
 
 # ---------- 7) apps no Launchpad ----------
-azul 7 "Criando os apps \"$NOME Estúdio\", \"$NOME\" e \"$NOME Painel\""
+azul 7 "Criando os apps \"$NOME Estúdio\" e \"$NOME Terminal\""
 mkdir -p "$HOME/Applications"
-for par in "V9 Lite Estúdio|ESTUDIO.command" "V9 Lite|ABRIR.command" "V9 Lite Painel|PAINEL_VISUAL.command"; do
+# 18/10: o Painel saiu e o app da conversa no Terminal ganhou nome claro (antes eram 3 "V9 Lite" parecidos no Launchpad)
+rm -rf "$HOME/Applications/V9 Lite Painel.app" "$HOME/Applications/V9 Lite.app"
+for par in "V9 Lite Estúdio|ESTUDIO.command" "V9 Lite Terminal|ABRIR.command"; do
   nome="${par%%|*}"; alvo="${par##*|}"; app="$HOME/Applications/$nome.app"
   rm -rf "$app"
   if [ "$alvo" = "ESTUDIO.command" ]; then                 # o Estúdio é APP: abre a janela própria, sem Terminal
