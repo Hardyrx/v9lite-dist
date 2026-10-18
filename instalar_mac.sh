@@ -186,6 +186,7 @@ for par in "V9 Lite Estúdio|ESTUDIO.command" "V9 Lite|ABRIR.command" "V9 Lite P
   nome="${par%%|*}"; alvo="${par##*|}"; app="$HOME/Applications/$nome.app"
   rm -rf "$app"
   osacompile -o "$app" -e "do shell script \"open -a Terminal '$DESTINO/$alvo'\"" || aviso "Não consegui criar o app $nome."
+  [ -f "$DESTINO/icones/v9lite.icns" ] && cp "$DESTINO/icones/v9lite.icns" "$app/Contents/Resources/applet.icns"   # a cabeça do robozinho V9
   touch "$app"
 done
 ok "apps em Aplicativos do usuário (~/Applications): aparecem no Launchpad e no Spotlight."
