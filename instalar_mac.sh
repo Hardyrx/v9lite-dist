@@ -185,7 +185,11 @@ mkdir -p "$HOME/Applications"
 for par in "V9 Lite Estúdio|ESTUDIO.command" "V9 Lite|ABRIR.command" "V9 Lite Painel|PAINEL_VISUAL.command"; do
   nome="${par%%|*}"; alvo="${par##*|}"; app="$HOME/Applications/$nome.app"
   rm -rf "$app"
-  osacompile -o "$app" -e "do shell script \"open -a Terminal '$DESTINO/$alvo'\"" || aviso "Não consegui criar o app $nome."
+  if [ "$alvo" = "ESTUDIO.command" ]; then                 # o Estúdio é APP: abre a janela própria, sem Terminal
+    osacompile -o "$app" -e "do shell script \"'$DESTINO/canal.sh' estudio > '$DADOS/estudio.log' 2>&1 &\"" || aviso "Não consegui criar o app $nome."
+  else
+    osacompile -o "$app" -e "do shell script \"open -a Terminal '$DESTINO/$alvo'\"" || aviso "Não consegui criar o app $nome."
+  fi
   [ -f "$DESTINO/icones/v9lite.icns" ] && cp "$DESTINO/icones/v9lite.icns" "$app/Contents/Resources/applet.icns"   # a cabeça do robozinho V9
   touch "$app"
 done
@@ -201,4 +205,4 @@ echo "  Também: \"V9 Lite\" (a conversa com a IA) e \"V9 Lite Painel\" (o escri
 echo "  Para atualizar: rode este mesmo comando de novo (o canal, os vídeos e a configuração ficam)."
 echo ""
 R="$(pergunta '  Abrir o V9 Lite agora? (S/N): ')"
-if [ "$R" = "s" ] || [ "$R" = "S" ]; then open -a Terminal "$DESTINO/ESTUDIO.command"; fi
+if [ "$R" = "s" ] || [ "$R" = "S" ]; then open "$HOME/Applications/V9 Lite Estúdio.app"; fi
