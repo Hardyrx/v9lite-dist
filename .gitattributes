@@ -1,0 +1,2 @@
+*.sh text eol=lf
+*.v9l binary
