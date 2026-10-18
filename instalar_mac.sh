@@ -180,9 +180,9 @@ else
 fi
 
 # ---------- 7) apps no Launchpad ----------
-azul 7 "Criando os apps \"$NOME\" e \"$NOME Painel\""
+azul 7 "Criando os apps \"$NOME Estúdio\", \"$NOME\" e \"$NOME Painel\""
 mkdir -p "$HOME/Applications"
-for par in "V9 Lite|ABRIR.command" "V9 Lite Painel|PAINEL_VISUAL.command"; do
+for par in "V9 Lite Estúdio|ESTUDIO.command" "V9 Lite|ABRIR.command" "V9 Lite Painel|PAINEL_VISUAL.command"; do
   nome="${par%%|*}"; alvo="${par##*|}"; app="$HOME/Applications/$nome.app"
   rm -rf "$app"
   osacompile -o "$app" -e "do shell script \"open -a Terminal '$DESTINO/$alvo'\"" || aviso "Não consegui criar o app $nome."
@@ -195,8 +195,9 @@ azul 8 "Resumo"
 rm -rf "$TMP"
 if [ ${#AVISOS[@]} -eq 0 ]; then ok "tudo certo, nenhuma pendência."; else echo "      Instalado, com pendências:"; for a in "${AVISOS[@]}"; do echo "       - $a"; done; fi
 echo ""
-echo "  Para usar: abra \"V9 Lite\" pelo Launchpad (a conversa com a IA) e \"V9 Lite Painel\" (o escritório e a aprovação)."
+echo "  Para usar: abra \"V9 Lite Estúdio\" pelo Launchpad (criar vídeo por escolhas, sem conversa)."
+echo "  Também: \"V9 Lite\" (a conversa com a IA) e \"V9 Lite Painel\" (o escritório e a aprovação)."
 echo "  Para atualizar: rode este mesmo comando de novo (o canal, os vídeos e a configuração ficam)."
 echo ""
 R="$(pergunta '  Abrir o V9 Lite agora? (S/N): ')"
-if [ "$R" = "s" ] || [ "$R" = "S" ]; then open -a Terminal "$DESTINO/ABRIR.command"; fi
+if [ "$R" = "s" ] || [ "$R" = "S" ]; then open -a Terminal "$DESTINO/ESTUDIO.command"; fi
