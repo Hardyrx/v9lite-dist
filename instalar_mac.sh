@@ -179,6 +179,19 @@ else
   "$CLAUDE" auth status >/dev/null 2>&1 && ok "login do Claude feito." || aviso "O login do Claude não foi concluído: abra o \"V9 Lite\" e digite /login."
 fi
 
+
+# 18/10 (dono: "nenhum com o ícone"): no macOS novo o app do osacompile traz um Assets.car que manda no ícone; trocar só o
+# applet.icns não aparece. Apaga o Assets.car, aponta o Info.plist para o applet.icns, reassina e avisa o Launchpad.
+icone_no_app() {
+  local a="$1"
+  rm -f "$a/Contents/Resources/Assets.car"
+  /usr/libexec/PlistBuddy -c "Delete :CFBundleIconName" "$a/Contents/Info.plist" >/dev/null 2>&1 || true
+  /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile applet" "$a/Contents/Info.plist" >/dev/null 2>&1 \
+    || /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string applet" "$a/Contents/Info.plist" >/dev/null 2>&1 || true
+  codesign --force --sign - "$a" >/dev/null 2>&1 && codesign --verify "$a" >/dev/null 2>&1 || aviso "O app $(basename "$a") pode não abrir: a assinatura falhou. Rode este instalador de novo."
+  touch "$a"
+  /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$a" >/dev/null 2>&1 || true
+}
 # ---------- 7) apps no Launchpad ----------
 azul 7 "Criando os apps \"$NOME Estúdio\" e \"$NOME Terminal\""
 mkdir -p "$HOME/Applications"
@@ -193,6 +206,7 @@ for par in "V9 Lite Estúdio|ESTUDIO.command" "V9 Lite Terminal|ABRIR.command"; 
     osacompile -o "$app" -e "do shell script \"open -a Terminal '$DESTINO/$alvo'\"" || aviso "Não consegui criar o app $nome."
   fi
   [ -f "$DESTINO/icones/v9lite.icns" ] && cp "$DESTINO/icones/v9lite.icns" "$app/Contents/Resources/applet.icns"   # a cabeça do robozinho V9
+  icone_no_app "$app"
   touch "$app"
 done
 ok "apps em Aplicativos do usuário (~/Applications): aparecem no Launchpad e no Spotlight."

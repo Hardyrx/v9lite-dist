@@ -1,7 +1,7 @@
 {
- "versao": "1.4.6",
+ "versao": "1.4.7",
  "arquivo": "pacote.v9l",
- "sha256": "764cea986531105c9ee9b2639d74c78df9d56538a9ad2f28f159c8118280f85c",
+ "sha256": "56209c6dbcea769fe6cbbf18f6c4fa606e090c14b83925f90deb438ad1516a0c",
  "plataformas": [
   "mac",
   "windows"
