@@ -190,11 +190,12 @@ icone_no_app() {
   /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$a" >/dev/null 2>&1 || true
 }
 # ---------- 7) apps no Launchpad ----------
-azul 7 "Criando o app \"$NOME Estúdio\""
+azul 7 "Criando o app \"$NOME\""
 mkdir -p "$HOME/Applications"
 # 18/10: o Painel saiu e o app da conversa no Terminal ganhou nome claro (antes eram 3 "V9 Lite" parecidos no Launchpad)
-rm -rf "$HOME/Applications/V9 Lite Painel.app" "$HOME/Applications/V9 Lite.app" "$HOME/Applications/V9 Lite Terminal.app"   # 19/10: sem Terminal
-for par in "V9 Lite Estúdio|ESTUDIO.command"; do
+# 19/10 (dono: "Terminal e Estúdio são coisas que não existem mais"): um app só, "V9 Lite", que abre o Estúdio
+rm -rf "$HOME/Applications/V9 Lite Painel.app" "$HOME/Applications/V9 Lite Terminal.app" "$HOME/Applications/V9 Lite Estúdio.app"
+for par in "V9 Lite|ESTUDIO.command"; do
   nome="${par%%|*}"; alvo="${par##*|}"; app="$HOME/Applications/$nome.app"
   rm -rf "$app"
   if [ "$alvo" = "ESTUDIO.command" ]; then                 # o Estúdio é APP: abre a janela própria, sem Terminal
@@ -213,9 +214,9 @@ azul 8 "Resumo"
 rm -rf "$TMP"
 if [ ${#AVISOS[@]} -eq 0 ]; then ok "tudo certo, nenhuma pendência."; else echo "      Instalado, com pendências:"; for a in "${AVISOS[@]}"; do echo "       - $a"; done; fi
 echo ""
-echo "  Para usar: abra \"V9 Lite Estúdio\" pelo Launchpad. Na primeira vez, a Conversa guia você:"
+echo "  Para usar: abra \"V9 Lite\" pelo Launchpad. Na primeira vez, a Conversa guia você:"
 echo "  entrar na conta do Claude, ligar o Flow (conta Google) e montar o canal. Nada mais para abrir ou instalar."
 echo "  Para atualizar: rode este mesmo comando de novo (o canal, os vídeos e a configuração ficam)."
 echo ""
 R="$(pergunta '  Abrir o V9 Lite agora? (S/N): ')"
-if [ "$R" = "s" ] || [ "$R" = "S" ]; then open "$HOME/Applications/V9 Lite Estúdio.app"; fi
+if [ "$R" = "s" ] || [ "$R" = "S" ]; then open "$HOME/Applications/V9 Lite.app"; fi
