@@ -163,20 +163,17 @@ ok "motor pronto."
 "$DADOS/venv/bin/python" motor/vozes.py --instalar >/dev/null 2>&1 && ok "voz local (reserva, sem internet) pronta." || aviso "A voz local não ficou pronta agora; a voz online funciona normalmente."
 
 # ---------- 6) Claude Code ----------
-azul 6 "Claude Code (quem conversa com você e escreve os roteiros)"
+azul 6 "Assistente de IA (o motor da Conversa e dos roteiros)"
 unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN
 CLAUDE="$HOME/.local/bin/claude"
 if [ ! -x "$CLAUDE" ]; then
   echo "      Instalando o Claude Code oficial (claude.ai/install.sh)..."
   curl -fsSL https://claude.ai/install.sh | bash >/dev/null 2>&1
 fi
-if [ ! -x "$CLAUDE" ]; then aviso "Não consegui instalar o Claude Code. Abra o \"V9 Lite\" depois: ele tenta de novo."
-elif "$CLAUDE" auth status >/dev/null 2>&1; then ok "Claude Code pronto e com login."
-else
-  echo "      Agora o LOGIN do Claude: vai abrir o navegador. Entre com a conta que tem a assinatura Pro ou Max."
-  pergunta '      Aperte Enter para abrir o login ' >/dev/null
-  "$CLAUDE" auth login --claudeai < /dev/tty
-  "$CLAUDE" auth status >/dev/null 2>&1 && ok "login do Claude feito." || aviso "O login do Claude não foi concluído: abra o \"V9 Lite\" e digite /login."
+# 19/10 (dono: "instalou o app, deu"): sem login no Terminal. Entrar na conta do Claude e no Google (Flow) são botões do app
+# (Conversa > Preparar o V9).
+if [ ! -x "$CLAUDE" ]; then aviso "O assistente de IA não instalou agora: o app tenta de novo pelo botão Instalar na Conversa."
+else ok "assistente de IA instalado (falta só entrar na conta do Claude, pelo app)."
 fi
 
 
@@ -193,11 +190,11 @@ icone_no_app() {
   /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$a" >/dev/null 2>&1 || true
 }
 # ---------- 7) apps no Launchpad ----------
-azul 7 "Criando os apps \"$NOME Estúdio\" e \"$NOME Terminal\""
+azul 7 "Criando o app \"$NOME Estúdio\""
 mkdir -p "$HOME/Applications"
 # 18/10: o Painel saiu e o app da conversa no Terminal ganhou nome claro (antes eram 3 "V9 Lite" parecidos no Launchpad)
-rm -rf "$HOME/Applications/V9 Lite Painel.app" "$HOME/Applications/V9 Lite.app"
-for par in "V9 Lite Estúdio|ESTUDIO.command" "V9 Lite Terminal|ABRIR.command"; do
+rm -rf "$HOME/Applications/V9 Lite Painel.app" "$HOME/Applications/V9 Lite.app" "$HOME/Applications/V9 Lite Terminal.app"   # 19/10: sem Terminal
+for par in "V9 Lite Estúdio|ESTUDIO.command"; do
   nome="${par%%|*}"; alvo="${par##*|}"; app="$HOME/Applications/$nome.app"
   rm -rf "$app"
   if [ "$alvo" = "ESTUDIO.command" ]; then                 # o Estúdio é APP: abre a janela própria, sem Terminal
@@ -216,8 +213,8 @@ azul 8 "Resumo"
 rm -rf "$TMP"
 if [ ${#AVISOS[@]} -eq 0 ]; then ok "tudo certo, nenhuma pendência."; else echo "      Instalado, com pendências:"; for a in "${AVISOS[@]}"; do echo "       - $a"; done; fi
 echo ""
-echo "  Para usar: abra \"V9 Lite Estúdio\" pelo Launchpad (criar vídeo por escolhas, sem conversa)."
-echo "  Também: \"V9 Lite\" (a conversa com a IA) e \"V9 Lite Painel\" (o escritório e a aprovação)."
+echo "  Para usar: abra \"V9 Lite Estúdio\" pelo Launchpad. Na primeira vez, a Conversa guia você:"
+echo "  entrar na conta do Claude, ligar o Flow (conta Google) e montar o canal. Nada mais para abrir ou instalar."
 echo "  Para atualizar: rode este mesmo comando de novo (o canal, os vídeos e a configuração ficam)."
 echo ""
 R="$(pergunta '  Abrir o V9 Lite agora? (S/N): ')"
