@@ -160,6 +160,21 @@ cp requirements.txt "$DADOS/venv/instalado_requirements.txt"
 ( cd motor && npm install --no-audit --no-fund --loglevel=error >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1 ) \
   || parar "Não consegui instalar o navegador das cenas. Confira a internet e rode de novo."
 ok "motor pronto."
+# navegador do Flow (Chrome for Testing, ~200 MB): é nele que a extensão gera as imagens na conta Google do dono.
+# Não impede a instalação: se não baixar agora, o "ligar o Flow" do app baixa na primeira vez.
+if [ -f "motor_flow/v9flow/__main__.py" ]; then
+  echo "      Conferindo o navegador do Flow (na primeira vez baixa uns 200 MB)..."
+  "$DADOS/venv/bin/python" motor/flow_embutido.py instalar-navegador >/dev/null 2>&1 \
+    && ok "navegador do Flow pronto (o login Google é depois, pelo app)." \
+    || aviso "O navegador do Flow não baixou agora. Não impede nada: o app baixa na primeira vez que ligar o Flow."
+fi
+# verificador de pronúncia (ouve a narração): o modelo "small" do faster-whisper, ~460 MB, uma vez só
+if [ "${V9L_SEM_WHISPER:-0}" = "1" ]; then aviso "Verificador de pronúncia pulado: o modelo baixa sozinho no primeiro vídeo (~460 MB)."
+else
+  echo "      Baixando o verificador de pronúncia (uma vez, ~460 MB)..."
+  "$DADOS/venv/bin/python" -c "from faster_whisper import WhisperModel; WhisperModel('small', device='cpu', compute_type='int8'); print('ok')" >/dev/null 2>&1 \
+    && ok "verificador de pronúncia pronto." || aviso "O verificador de pronúncia não baixou agora; tenta de novo no primeiro vídeo."
+fi
 "$DADOS/venv/bin/python" motor/vozes.py --instalar >/dev/null 2>&1 && ok "voz local (reserva, sem internet) pronta." || aviso "A voz local não ficou pronta agora; a voz online funciona normalmente."
 
 # ---------- 6) Claude Code ----------
