@@ -18,6 +18,9 @@ NOME="V9 Lite"
 TMP="$(mktemp -d -t v9liteinst)"
 AVISOS=()
 TOTAL=8
+# 24/10 (auditoria 23/10): todo download com tempo máximo (antes uma conexão parada prendia o instalador para sempre)
+CURL_CURTO=(--connect-timeout 20 --max-time 120)
+CURL_LONGO=(--connect-timeout 20 --max-time 1800)
 
 azul()  { printf '\n\033[36m[%s/%s] %s\033[0m\n' "$1" "$TOTAL" "$2"; }
 ok()    { printf '      \033[32mOK -- %s\033[0m\n' "$1"; }
@@ -39,7 +42,7 @@ azul 1 "Python"
 export PATH="$HOME/.local/bin:$PATH"
 if ! command -v uv >/dev/null 2>&1; then
   echo "      Instalando o gerenciador de Python (uv, só para este usuário)..."
-  curl -LsSf https://astral.sh/uv/install.sh | sh >/dev/null 2>&1 || parar "Não consegui instalar o Python. Confira a internet e rode de novo."
+  curl -LsSf "${CURL_CURTO[@]}" https://astral.sh/uv/install.sh | sh >/dev/null 2>&1 || parar "Não consegui instalar o Python. Confira a internet e rode de novo."
   export PATH="$HOME/.local/bin:$PATH"
 fi
 command -v uv >/dev/null 2>&1 || parar "Não consegui preparar o Python."
@@ -112,11 +115,11 @@ done
 
 # ---------- 3) programa ----------
 azul 3 "Baixando o V9 Lite para $DESTINO"
-curl -fsSL "$DIST_URL/latest.json" -o "$TMP/latest.json" || parar "Não consegui ver a versão atual. Confira a internet."
+curl -fsSL "${CURL_CURTO[@]}" "$DIST_URL/latest.json" -o "$TMP/latest.json" || parar "Não consegui ver a versão atual. Confira a internet."
 VERSAO="$("$VPY" -c 'import json,sys;print(json.load(open(sys.argv[1]))["versao"])' "$TMP/latest.json")"
 ARQ="$("$VPY" -c 'import json,sys;print(json.load(open(sys.argv[1])).get("arquivo") or "pacote.v9l")' "$TMP/latest.json")"
 SHA="$("$VPY" -c 'import json,sys;print(json.load(open(sys.argv[1]))["sha256"].lower())' "$TMP/latest.json")"
-curl -fsSL "$DIST_URL/$ARQ" -o "$TMP/$ARQ" || parar "Não consegui baixar o programa. Confira a internet."
+curl -fsSL "${CURL_LONGO[@]}" "$DIST_URL/$ARQ" -o "$TMP/$ARQ" || parar "Não consegui baixar o programa. Confira a internet."
 [ "$(shasum -a 256 "$TMP/$ARQ" | cut -d' ' -f1)" = "$SHA" ] || parar "O arquivo baixado não confere. Espere uns minutos e rode de novo."
 if [ -d "$DESTINO" ] && [ ! -f "$DESTINO/motor/canal.py" ] && [ -n "$(ls -A "$DESTINO" 2>/dev/null)" ]; then
   parar "A pasta $DESTINO já existe e não é do V9 Lite. Renomeie essa pasta e rode de novo."
@@ -133,18 +136,26 @@ ok "programa instalado (versão $VERSAO)."
 azul 4 "ffmpeg e Node"
 cd "$DESTINO" || parar "Não consegui entrar na pasta do programa."
 PLAT="$(uname -m)"; [ "$PLAT" = "arm64" ] || PLAT="amd64"
+# 24/10 (auditoria 23/10): o ffmpeg vinha sem conferência nenhuma. O endereço "latest" redireciona para o arquivo da versão
+# do dia, e o site publica o .sha256 ao lado dele: confere antes de abrir (não bateu, ou o hash não veio = para).
+baixar_ffmpeg() {   # baixar_ffmpeg <ffmpeg|ffprobe> <arm64|amd64> <destino.zip>
+  local final esperado
+  final="$(curl -fsSL "${CURL_LONGO[@]}" -o "$3" -w '%{url_effective}' "${V9L_FFMPEG_URL:-https://ffmpeg.martin-riedl.de/redirect/latest/macos}/$2/release/$1.zip")" || return 1
+  esperado="$(curl -fsSL "${CURL_CURTO[@]}" "$final.sha256" | grep -Eo '[0-9a-fA-F]{64}' | head -1 | tr 'A-F' 'a-f')"
+  [ -n "$esperado" ] && [ "$(shasum -a 256 "$3" | cut -d' ' -f1)" = "$esperado" ]
+}
 if [ ! -x "ffmpeg/bin/ffmpeg" ] || [ ! -x "ffmpeg/bin/ffprobe" ]; then
   mkdir -p ffmpeg/bin
   for prog in ffmpeg ffprobe; do
-    curl -fsSL "https://ffmpeg.martin-riedl.de/redirect/latest/macos/$PLAT/release/$prog.zip" -o "$TMP/$prog.zip" \
-      && ditto -x -k "$TMP/$prog.zip" ffmpeg/bin && chmod +x "ffmpeg/bin/$prog" && xattr -d com.apple.quarantine "ffmpeg/bin/$prog" 2>/dev/null
+    baixar_ffmpeg "$prog" "$PLAT" "$TMP/$prog.zip" || parar "O $prog baixado não confere (ou não baixou). Confira a internet e rode de novo."
+    ditto -x -k "$TMP/$prog.zip" ffmpeg/bin && chmod +x "ffmpeg/bin/$prog" && { xattr -d com.apple.quarantine "ffmpeg/bin/$prog" 2>/dev/null; true; }
   done
 fi
 ffmpeg/bin/ffmpeg -hide_banner -version >/dev/null 2>&1 && ok "ffmpeg pronto." || parar "Não consegui baixar o ffmpeg. Confira a internet e rode de novo."
 if [ ! -x "node/bin/node" ]; then
   if [ "$(uname -m)" = "arm64" ]; then NODE_ARQ="node-v24.15.0-darwin-arm64"; NODE_SHA="372331b969779ab5d15b949884fc6eaf88d5afe87bde8ba881d6400b9100ffc4"
   else NODE_ARQ="node-v24.15.0-darwin-x64"; NODE_SHA="ffd5ee293467927f3ee731a553eb88fd1f48cf74eebc2d74a6babe4af228673b"; fi
-  curl -fsSL "https://nodejs.org/dist/v24.15.0/$NODE_ARQ.tar.gz" -o "$TMP/node.tar.gz" || parar "Não consegui baixar o Node. Confira a internet."
+  curl -fsSL "${CURL_LONGO[@]}" "https://nodejs.org/dist/v24.15.0/$NODE_ARQ.tar.gz" -o "$TMP/node.tar.gz" || parar "Não consegui baixar o Node. Confira a internet."
   [ "$(shasum -a 256 "$TMP/node.tar.gz" | cut -d' ' -f1)" = "$NODE_SHA" ] || parar "O Node baixado não confere."
   tar -xzf "$TMP/node.tar.gz" -C "$TMP" && rm -rf node && mv "$TMP/$NODE_ARQ" node
 fi
@@ -157,6 +168,7 @@ mkdir -p "$DADOS"
 [ -x "$DADOS/venv/bin/python" ] || uv venv --python 3.12 --seed "$DADOS/venv" >/dev/null 2>&1 || parar "Não consegui criar o ambiente do programa."
 UV_HTTP_TIMEOUT=120 uv pip install -q --python "$DADOS/venv/bin/python" -r requirements.txt || parar "A instalação das bibliotecas falhou. Confira a internet e rode de novo."
 cp requirements.txt "$DADOS/venv/instalado_requirements.txt"
+printf '%s' "$DESTINO" > "$DADOS/venv/dono.txt"   # 23/10 (auditoria): o DESINSTALAR.command confere o dono antes de apagar
 ( cd motor && npm install --no-audit --no-fund --loglevel=error >/dev/null 2>&1 && npx playwright install chromium >/dev/null 2>&1 ) \
   || parar "Não consegui instalar o navegador das cenas. Confira a internet e rode de novo."
 ok "motor pronto."
@@ -183,7 +195,7 @@ unset ANTHROPIC_API_KEY ANTHROPIC_AUTH_TOKEN
 CLAUDE="$HOME/.local/bin/claude"
 if [ ! -x "$CLAUDE" ]; then
   echo "      Instalando o Claude Code oficial (claude.ai/install.sh)..."
-  curl -fsSL https://claude.ai/install.sh | bash >/dev/null 2>&1
+  curl -fsSL "${CURL_CURTO[@]}" https://claude.ai/install.sh | bash >/dev/null 2>&1
 fi
 # 19/10 (dono: "instalou o app, deu"): sem login no Terminal. Entrar na conta do Claude e no Google (Flow) são botões do app
 # (Conversa > Preparar o V9).
