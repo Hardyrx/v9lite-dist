@@ -14,7 +14,7 @@ DIST_URL="${V9L_BASE_URL:-https://raw.githubusercontent.com/Hardyrx/v9lite-dist/
 LICENCA_URL="${V9_LICENCA_URL:-https://hrvrhaxllsbgiwkliuoc.supabase.co/functions/v1/licenca}"
 DESTINO="${V9L_DESTINO:-$HOME/V9Lite}"
 DADOS="$HOME/Library/Application Support/V9Lite"
-NOME="V9 Lite"
+NOME="V9 Lite 2.0"
 TMP="$(mktemp -d -t v9liteinst)"
 AVISOS=()
 TOTAL=8
@@ -212,6 +212,10 @@ icone_no_app() {
   /usr/libexec/PlistBuddy -c "Delete :CFBundleIconName" "$a/Contents/Info.plist" >/dev/null 2>&1 || true
   /usr/libexec/PlistBuddy -c "Set :CFBundleIconFile applet" "$a/Contents/Info.plist" >/dev/null 2>&1 \
     || /usr/libexec/PlistBuddy -c "Add :CFBundleIconFile string applet" "$a/Contents/Info.plist" >/dev/null 2>&1 || true
+  # 18/11 (dono): o nome visível é "V9 Lite 2.0"; o arquivo segue "V9 Lite.app" (o app e o desinstalador procuram por ele)
+  for k in CFBundleDisplayName CFBundleName; do
+    plutil -replace "$k" -string "$NOME" "$a/Contents/Info.plist" >/dev/null 2>&1 || true   # plutil: aceita espaço e cria se faltar
+  done
   codesign --force --sign - "$a" >/dev/null 2>&1 && codesign --verify "$a" >/dev/null 2>&1 || aviso "O app $(basename "$a") pode não abrir: a assinatura falhou. Rode este instalador de novo."
   touch "$a"
   /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$a" >/dev/null 2>&1 || true
@@ -230,7 +234,7 @@ for par in "V9 Lite|ESTUDIO.command"; do
   else
     osacompile -o "$app" -e "do shell script \"open -a Terminal '$DESTINO/$alvo'\"" || aviso "Não consegui criar o app $nome."
   fi
-  [ -f "$DESTINO/icones/v9lite.icns" ] && cp "$DESTINO/icones/v9lite.icns" "$app/Contents/Resources/applet.icns"   # a cabeça do robozinho V9
+  [ -f "$DESTINO/icones/v9lite.icns" ] && cp "$DESTINO/icones/v9lite.icns" "$app/Contents/Resources/applet.icns"   # o ícone prata (V9 em cromo na laca preta)
   icone_no_app "$app"
   touch "$app"
 done
