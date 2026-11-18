@@ -17,7 +17,7 @@ DADOS="$HOME/Library/Application Support/V9Lite"
 NOME="V9 Lite 2.0"
 TMP="$(mktemp -d -t v9liteinst)"
 AVISOS=()
-TOTAL=8
+TOTAL=9
 # 24/10 (auditoria 23/10): todo download com tempo máximo (antes uma conexão parada prendia o instalador para sempre)
 CURL_CURTO=(--connect-timeout 20 --max-time 120)
 CURL_LONGO=(--connect-timeout 20 --max-time 1800)
@@ -203,6 +203,38 @@ if [ ! -x "$CLAUDE" ]; then aviso "O assistente de IA não instalou agora: o app
 else ok "assistente de IA instalado (falta só entrar na conta do Claude, pelo app)."
 fi
 
+# ---------- 7) Codex (a reserva do Claude) ----------
+# 18/11 (dono: "SIM VAI SIM"): o instalador OFERECE o Codex antes de abrir o app. A lógica é a do cartão Preparar o V9
+# (motor/codex_passo.py chama o cerebro.py: npm install -g @openai/codex e `codex login`, que abre a página do ChatGPT para
+# a PESSOA entrar). Falhou ou pulou: a instalação segue normal e o cartão no app continua funcionando depois.
+passo_codex() {
+  local py="$DADOS/venv/bin/python" passo="$DESTINO/motor/codex_passo.py" r
+  if [ ! -x "$py" ] || [ ! -f "$passo" ]; then aviso "Não deu para oferecer o Codex agora. Depois: no app, Conversa > Preparar o V9."; return 0; fi
+  case "$("$py" "$passo" estado --nome 2>/dev/null | tail -1)" in
+    pronto) "$py" "$passo" tudo --texto >/dev/null 2>&1; ok "o Codex já estava instalado e conectado à sua conta do ChatGPT."; return 0 ;;
+    nao_suportado) return 0 ;;
+  esac
+  echo "      O Codex é a reserva do V9 Lite: quando o Claude bate no limite de uso, o Codex continua o trabalho"
+  echo "      no modo automático. Ele usa a sua conta do ChatGPT: você entra numa página do navegador que abre"
+  echo "      sozinha; o V9 não vê nem guarda a sua senha."
+  R="$(pergunta '      Quer instalar o Codex agora? (S/n): ')"
+  case "$R" in
+    n|N|nao|não|Nao|Não|NAO|NÃO)
+      echo "      Tudo bem. Quando quiser: no app, Conversa > cartão Preparar o V9 > Codex."; return 0 ;;
+  esac
+  echo "      (para pular o login, aperte Ctrl+C: só o Codex é pulado, a instalação continua)"
+  trap 'true' INT
+  "$py" "$passo" tudo --texto; r=$?
+  trap - INT
+  if [ "$r" = 0 ]; then ok "Codex conectado: ele entra quando o Claude bater no limite."
+  elif [ "$r" = 2 ]; then echo "      Codex pulado. Quando quiser: no app, Conversa > cartão Preparar o V9."
+  else aviso "O Codex não ficou conectado agora. Depois: no app, Conversa > cartão Preparar o V9."
+  fi
+  return 0
+}
+azul 7 "Codex: a reserva para quando o Claude bater no limite"
+passo_codex
+
 
 # 18/10 (dono: "nenhum com o ícone"): no macOS novo o app do osacompile traz um Assets.car que manda no ícone; trocar só o
 # applet.icns não aparece. Apaga o Assets.car, aponta o Info.plist para o applet.icns, reassina e avisa o Launchpad.
@@ -220,8 +252,8 @@ icone_no_app() {
   touch "$a"
   /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$a" >/dev/null 2>&1 || true
 }
-# ---------- 7) apps no Launchpad ----------
-azul 7 "Criando o app \"$NOME\""
+# ---------- 8) apps no Launchpad ----------
+azul 8 "Criando o app \"$NOME\""
 mkdir -p "$HOME/Applications"
 # 18/10: o Painel saiu e o app da conversa no Terminal ganhou nome claro (antes eram 3 "V9 Lite" parecidos no Launchpad)
 # 19/10 (dono: "Terminal e Estúdio são coisas que não existem mais"): um app só, "V9 Lite", que abre o Estúdio
@@ -240,8 +272,8 @@ for par in "V9 Lite|ESTUDIO.command"; do
 done
 ok "apps em Aplicativos do usuário (~/Applications): aparecem no Launchpad e no Spotlight."
 
-# ---------- 8) resumo ----------
-azul 8 "Resumo"
+# ---------- 9) resumo ----------
+azul 9 "Resumo"
 rm -rf "$TMP"
 if [ ${#AVISOS[@]} -eq 0 ]; then ok "tudo certo, nenhuma pendência."; else echo "      Instalado, com pendências:"; for a in "${AVISOS[@]}"; do echo "       - $a"; done; fi
 echo ""
