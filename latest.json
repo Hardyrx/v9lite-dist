@@ -1,7 +1,7 @@
 {
- "versao": "2.2.1",
+ "versao": "2.2.2",
  "arquivo": "pacote.v9l",
- "sha256": "c4325375d73df1a51c782880fca2eb98d1f81d20cc627c90d91d011a0f3fa56c",
+ "sha256": "ff91eebe50022c6100a4817ba6474239191acab3b31b26bfd5a7734900f486e8",
  "plataformas": [
   "mac",
   "windows"
