@@ -35,6 +35,11 @@ MEM_GB=$(( $(sysctl -n hw.memsize) / 1073741824 ))
 LIVRE_GB=$(( $(df -k "$HOME" | tail -1 | awk '{print $4}') / 1048576 ))
 echo "      Este Mac: $(sysctl -n machdep.cpu.brand_string 2>/dev/null), ${MEM_GB} GB de memória, ${LIVRE_GB} GB livres."
 [ "$(sw_vers -productVersion | cut -d. -f1)" -ge 12 ] 2>/dev/null || parar "O V9 Lite precisa do macOS 12 (Monterey) ou mais novo."
+# 20/11 (revisão): o av 18.1.0 (voz/legendas) só tem pacote pronto para chip Apple a partir do macOS 14; no 12/13 o passo 5
+# tentava compilar e falhava sempre com "a instalação das bibliotecas falhou". Avisa ANTES, com o que fazer.
+if [ "$(uname -m)" = "arm64" ] && [ "$(sw_vers -productVersion | cut -d. -f1)" -lt 14 ] 2>/dev/null; then
+  parar "Neste Mac com chip Apple o V9 Lite precisa do macOS 14 (Sonoma) ou mais novo. Atualize em Ajustes do Sistema > Geral > Atualização de Software e rode este instalador de novo."
+fi
 [ "$LIVRE_GB" -ge 6 ] || parar "Pouco espaço livre (${LIVRE_GB} GB). O programa ocupa cerca de 2 GB e cada vídeo mais alguns GB."
 
 # ---------- 1) Python (uv: sem administrador, sem Homebrew) ----------
@@ -103,6 +108,8 @@ while :; do
     sem_chave) parar "Este Mac (código $CODIGO) está liberado, mas sem direito a instalar. Fale com o suporte." ;;
     sem_rede) echo "      Não consegui falar com o servidor de licenças. Confira a internet (tento de novo em 20 s)." ;;
     servidor_antigo) parar "O servidor ainda não está pronto para o V9 Lite. Fale com o suporte." ;;
+    aguardando) : ;;
+    *) parar "Não consegui gerar o código deste Mac. Rode o instalador de novo; se repetir, mande um print para o suporte." ;;
   esac
   if [ "$AVISOU" = 0 ] && [ "$ESTADO" = "aguardando" ]; then
     AVISOU=1
